@@ -36,7 +36,13 @@ The problem is that the author of someFunction needs to know the implementation 
 
 The problems get even worse when choosing exactly when to delete instances.  Here’s another example.
 ```cpp
-void otherFunction (StringListView* pMyClass);
+void workerThreadFunction (StringListView* pMyClass) {
+	// time consuming processing ommitted
+	pMyClass->printNames ("String List");
+}
+void otherFunction (StringListView* pMyClass) {
+	std::thread workerThread (workerThreadFunction, pMyOtherClass);
+}
 
 void someFunction () {
 	StringListView* pMyClass = myClassFactory ();
@@ -48,7 +54,7 @@ void someFunction () {
 	// It just became invalid!
 }
 ```
-In this case, the developer has responsibly cleaned up by calling delete, but was unaware that the code in otherFunction stored the pointer in a data structure.  Even worse, what otherFunction did not do that when this code was written, but gets refactored at some point in the future to do it?  In order to avoid creating this type of defect, developers need to understand the low level implementation of the entire code base.  
+In this case, the developer has responsibly cleaned up by calling delete, but was unaware that the code in otherFunction starts a thread that uses the pointer.  Even worse, what otherFunction did not do that when this code was written, but gets refactored at some point in the future to do it?  In order to avoid creating this type of defect, developers need to understand the low level implementation of the entire code base.  
 
 As the code becomes larger and more complex, this eventually becomes unmanageable.  In order to avoid difficult and costly implementation issues, a different approach is needed.
 
