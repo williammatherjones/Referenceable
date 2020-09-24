@@ -52,7 +52,7 @@ In this case, the developer has responsibly cleaned up by calling delete, but wa
 
 As the code becomes larger and more complex, this eventually becomes unmanageable.  In order to avoid difficult and costly implementation issues, a different approach is needed.
 
-Using stack memory
+### Using stack memory
 This is the obvious alternative at at first would seem like a great solution.  Declaring class instances as local variables is very easy in C++.   However, the author of the code quickly becomes bogged down in implementation details and it can be very easy to introduce another class of memory management defects.   The problem is how to pass those class instances to other methods.  This comes down to the choice of passing by reference or passing a pointer.
 
 This is demonstrated by the following code:
@@ -82,3 +82,8 @@ void dummy () {
 	StringListView myOtherClass = myClass;
 }
 ```
+Ask a Java developer and they will tell you this is not complex.  But in reality, this code makes four copies of the same class.   Each copy is different.   A Java developer would expect all a method that changes myClass to also change myOtherClass.   
+
+Calling byReference converts the object to a pointer to the object on the stack.  This seems reasonable, but what happens if byReference uses the new operator to allocate a class on the heap that uses the pointer?   The program will have a data structure with a pointer that will become invalid once the calling function or method finishes and the heap memory is freed.   
+
+Now that we have reviewed the tedious mess that C++ developers face, let’s see how the code can be improved using a design pattern called reference classes.
