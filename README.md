@@ -16,7 +16,7 @@ Memory leaks are among the most insidious of the types of defects that can be in
 C++ developers must weigh different options in deciding how to implement their code.   It comes down to the choice of allocating class instances on the stack as local variables and passing by reference, or using the new and delete operators to allocate class instances on the heap.  This is a foreign concept to Java developers because Java only supports one model:  Allocate with new and garbage collect when the object is no longer referenced.
 
 ### Using heap memory
-On the surface, declaring a pointer to a class and allocating it with the new operator is just like Java usage. But that’s where the similarities end. C++ has no mechanism to call delete at some point in the future. If never called, the program will leak memory. Call it too soon, when other classes still have pointers to the instances, and that may access invalid pointers.  Worse still, it could be valid memory recycled by another allocation, causing writes to the memory to corrupt the other classes.   This class of defect is easy to introduce, difficult to detect and time consuming to fix.  This is the polar opposite of desirable production coding environments in any language, which need to be hard to introduce, easy to detect and quick to fix.  
+On the surface, declaring a pointer to a class and allocating it with the new operator is just like Java usage. But that’s where the similarities end. C++ has no mechanism to call delete at some point in the future. If never called, the program will leak memory. Call it too soon, when other classes still have pointers to the instances, and that may access invalid pointers.  Worse still, it could be valid memory recycled by another allocation, causing writes to the memory to corrupt the other classes.   This class of defect is easy to introduce, difficult to detect and time consuming to fix.  This is the polar opposite of desirable production coding environments in any language. Defects should to be hard to introduce, easy to detect and quick to fix.  
 
 This example demonstrates the dangers of unchecked use of new and delete.
 
@@ -32,7 +32,7 @@ void someFunction () {
 	// Oops!  Forgot to delete pMyClass.  Memory leak.
 }
 ```
-The problem is that the author of someFunction needs to know the implementation of myClassFactory.  This causes the code to be more tedious to write.  Furthermore, should the implementation of myClassFactory change in the future, the code could break.   This also causes the lifecycle of the class to have a procedural implementation.  
+The problem is that the author of someFunction needs to know the implementation of myClassFactory.  This causes the code to be more tedious to write.  Furthermore, should the implementation of myClassFactory change in the future, the code could break.   This also causes the lifecycle of the class to have a procedural implementation. In order to understand when to call delete, the author of the code must understand the implementation details, not only of the code that allocates the class, but all code that uses it.  As a result, Object oriented principles of encapsulation, polymorphism and providing interfaces can not be used effectively.
 
 The problems get even worse when choosing exactly when to delete instances.  Here’s another example.
 ```cpp
