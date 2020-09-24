@@ -87,3 +87,73 @@ Ask a Java developer and they will tell you this is not complex.  But in reality
 Calling byReference converts the object to a pointer to the object on the stack.  This seems reasonable, but what happens if byReference uses the new operator to allocate a class on the heap that uses the pointer?   The program will have a data structure with a pointer that will become invalid once the calling function or method finishes and the heap memory is freed.   
 
 Now that we have reviewed the tedious mess that C++ developers face, let’s see how the code can be improved using a design pattern called reference classes.
+## A different approach: C++ reference classes
+Memory leaks are among the most insidious of the types of defects that can be introduced into software.   This project uses a technique that brings the advantages of Java style object references while still maintaining the power and control that C++ developers require.  
+
+Reference classes encapsulate the lifecycle of C++ class instances.  Instances are still allocated with the new operator, but the reference classes decide when to call delete. This transforms the code, removing the sharp edges and rusty nails that typically cause C++ code to leak memory, or excessive use of copy constructors that cause the code to look clean but makes passing and returning classes to be complex and computationally expensive.  
+
+The complexity of reference counting is encapsulated in a template class, which is the basis of the view::StringListViewRef shown below.   
+```cpp
+class StringListView : public ref::Referenceable {
+public:
+	void printList ();
+};
+DECLARE_REFERENCE(StringListView);
+
+StringListViewRef myClassFactory () {
+	return new StringListView ();
+}
+
+void someFunction () {
+	StringListViewRef viewRef = myClassFactory ();
+	// No need for cleanup.
+	// myClassRef will delete the instance when it destructs!
+} 
+```
+The reference class allows code to be written much more in the style familiar to Java programmers.   Developers no longer need to understand the implementation details of C++ memory management.  The class is simply deleted when it is no longer referenced.  There is a lot going on behind the implementation, but the result is very clean, simple and easy to maintain C++ code.
+
+Let’s make the example slightly more complex.
+```cpp
+class StringList : public ref::Referenceable {
+};
+DECLARE_REFERENCE(StringList);
+
+class StringListView : public ref::Referenceable {
+public:
+	StringListView(StringList *pStringList) {
+		m_StringListRef = pStringList;
+	}
+
+	void printList () {};
+private:
+	StringListRef m_StringListRef;
+};
+DECLARE_REFERENCE(StringListView);
+
+StringListViewRef myClassFactory (StringList *pStringList) {
+	return new StringListView (pStringList);
+}
+
+StringListRef someFunction () {
+	StringListRef listRef = new StringList ();
+	StringListViewRef viewRef = myClassFactory (listRef);
+	if (viewRef != NULL) {
+		viewRef->printList ();
+	}
+	return listRef;
+}
+void someOtherFunction () {
+	StringListRef listRef = someFunction ();
+}
+```
+The code has several notable changes:   
+The StringList class has been added.  
+The StringListView now has a private member variable.   Since this is a reference class, it ensures that the StringList instance will not be deleted while it is still referencing it.
+The someFunction method now returns the listRef.  When the function returns, the viewRef will delete its StringListView.   When that class destructs, it will release its m_StringListRef reference.   However, the StringList instance will not be deleted because it is still referenced by listRef.  That instance will not be deleted until someOtherFunction returns, causing the last reference to be released.  
+The someFunction method checks viewRef for NULL.  Overloaded operators cause this to check to see if viewRef if referencing a class.   Internally, this checks a pointer for NULL.
+If you look back at the implementation of someFunction, you may notice something strange. 
+	viewRef->printList ();
+If this were a normal C++ class, the syntax should be:
+	viewRef.printList ();
+The reference class does this by overriding the member selection operator ->.  The printList method is not a method of the reference class.  It is directly calling the method of the StringListView as defined in the sample.  
+The reference class overloads operators and the right constructors in order to achieve this simple usage syntax.  The details of the implementation can be seen in src/reference/Referencable.h.
