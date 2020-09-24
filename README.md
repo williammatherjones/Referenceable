@@ -164,7 +164,9 @@ viewRef.printList ();
 The reference class overloads operators and the right constructors in order to achieve this simple usage syntax.  The details of the implementation can be seen in src/reference/Referencable.h.
 ## C++ reference classes vs Java
 There are some subtle differences between this C++ reference class implementation and Java.   Most importantly, there is no garbage collection algorithm.  When classes are no longer referenced, they are deleted immediately.   This is in many ways superior to the Java implementation because you can count on destructors being called immediately.   Therefore, classes can reference system resources.  For example, a class can keep a file open, reading and writing as needed.   
+
 However, this does not mean that a garbage collection style reference class could not be implemented.   The implementation could be changed to add the pointers to a garbage collection list when the reference count goes to zero.  Another thread could monitor and process the list, causing the threads doing the allocation to return faster.  
+
 Furthermore, there is no reason that two different implementations could not be defined, allowing the author of the class a choice between the strict and garbage collection styles of memory management.  
 For example, the author of the StringList class may opt for strict references because the class keeps a file open.
 ```cpp
@@ -174,9 +176,28 @@ DECLARE_REFERENCE(StringList);
 ```
 However, when writing the StringListView, the author decides to delay the destruction using a garbage collection implementation.  
 ```cpp
-class StringListView : public ref::Referenceable {
+class StringListView : public ref::GC_Referenceable {
 };
 DECLARE_GC_REFERENCE(StringListView);
 ```
-This could cause the destructor of the class to be called at some point in the future, or for the program to intentionally “leak” by shutting down without fully destructing all objects.   This could cause some C++ programs to run faster by skipping deleting class instances while preventing those intentional leaks from exhausting memory.
-DECLARE_STRICT_REFERENCE(StringList);
+One of the areas yet to be researched is providing implementations of the new and delete operators on the Referenceable class.  This implementation uses the default new and delete for C++ classes.  The C++ language supports the implementation of alternate implementations.  It is certainly possible to overide the new and delete operators for the Referenceable class that customize this behavior.   In fact, this may be a way to acheive different flavors of the Java style garbage collection functionality.  More research is required to determine the exact implementation.   
+```cpp
+
+void* operator new(std::size_t sz) {
+    // Customize functionality here...
+    return std::malloc(sz);
+}
+void operator delete(void* ptr) noexcept
+{
+    // Customize functionality here...
+    std::free(ptr);
+}
+```
+There are several flavors of garbage collection that could apply to C++ programs:
+* Gaurantee the destructor of the class will be called at some point in the future by a different thread.  This would allow the main execution to return faster than the version that includes the execution of all destructors.  This could be accomplished by providing an alternate implementation of the Reference class that defers calling delete by adding the pointer to a list that is shared with a garbage collecion thread.
+* Call delete immediately (in the same thread that called new), but delay the call to free, allowing the garbage collector to process.
+* Allow some instances to intentionally “leak” by shutting down without fully destructing all objects and freeing their memory.  Some class implementations may not need formal destruction.  While it is reasonable to assume those classes would not define destructors, there could still be significant execution time saved by not freeing all pointers prior to ending excution of a C++ program.  
+This could cause some C++ programs to run faster by skipping deleting class instances while preventing those intentional leaks from exhausting memory.
+
+## Conclusion
+The implementation of Referenceable is a transformative change to development of complex production C++ code.  It removes the staggering complexity required to manage the lifecycle of C++ classes by offering the best of both models of memory management avilable to C++ developers, using objects allocated on the call stack by declaring as a local variable or allocated on the heap using the new operator.  Because of the flexiblity and power of the C++ language, further encapsulation and customization of the implementation is possible through the the new and delete operators, Java style garbage collection, and custom std::allocator implementations. 
