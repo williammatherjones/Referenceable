@@ -199,5 +199,67 @@ There are several flavors of garbage collection that could apply to C++ programs
 
 This could cause some C++ programs to run faster by skipping deleting class instances while preventing those intentional leaks from exhausting memory.
 
+## Code Review
+Start by reviewing the code in My Reference Project.cpp.   The code loads a StringList from a src/Names.txt, sorts the values and then merges values from an additional list loaded from memory.   What the program does is not remarkable, it's how it does it.   
+
+## Console Output
+Here is an example of the output written to cout during execution.  
+```
+Loaded the list from [src/Names.txt].
+
+List loaded from file:
+	[Grape     ]
+	[Orange    ]
+	[Apple     ]
+	[Bananna   ]
+4 entries (Not sorted)
+Sorting the list
+
+List loaded from file:
+	[Apple     ]
+	[Bananna   ]
+	[Grape     ]
+	[Orange    ]
+4 entries (Sorted)
+
+Insert list:
+	[Strawberry]
+	[Kiwi]
+	[Raspberry]
+3 entries (Not sorted)
+Sorting the insert list
+
+Insert list:
+	[Kiwi]
+	[Raspberry]
+	[Strawberry]
+3 entries (Sorted)
+
+Merging...
+
+List after merge:
+	[Apple     ]
+	[Bananna   ]
+	[Grape     ]
+	[Kiwi]
+	[Orange    ]
+	[Raspberry]
+	[Strawberry]
+7 entries (Sorted)
+
+Insert list is unchanged (After merge):
+	[Kiwi]
+	[Raspberry]
+	[Strawberry]
+3 entries (Sorted)
+
+The additional model and view will be destructed
+Reference::releaseInstance - Reference count reached zero.  Deleting instance 0x7fd5b0d041a0
+Reference::releaseInstance - Reference count reached zero.  Deleting instance 0x7fd5b0d04160
+
+The file model and view will be destructed
+Reference::releaseInstance - Reference count reached zero.  Deleting instance 0x7fd5b0d04140
+Reference::releaseInstance - Reference count reached zero.  Deleting instance 0x7fd5b0c057a0
+```
 ## Conclusion
 The implementation of Referenceable is a transformative change to development of complex production C++ code.  It removes the staggering complexity required to manage the lifecycle of C++ classes by offering the best of both models of memory management avilable to C++ developers, using objects allocated on the call stack by declaring as a local variable or allocated on the heap using the new operator.  Because of the flexiblity and power of the C++ language, further encapsulation and customization of the implementation is possible through the the new and delete operators, Java style garbage collection, and custom std::allocator implementations. 
