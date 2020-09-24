@@ -165,10 +165,9 @@ The reference class overloads operators and the right constructors in order to a
 ## C++ reference classes vs Java
 There are some subtle differences between this C++ reference class implementation and Java.   Most importantly, there is no garbage collection algorithm.  When classes are no longer referenced, they are deleted immediately.   This is in many ways superior to the Java implementation because you can count on destructors being called immediately.   Therefore, classes can reference system resources.  For example, a class can keep a file open, reading and writing as needed.   
 
-However, this does not mean that a garbage collection style reference class could not be implemented.   The implementation could be changed to add the pointers to a garbage collection list when the reference count goes to zero.  Another thread could monitor and process the list, causing the threads doing the allocation to return faster.  
+However, this does not mean that a garbage collection style reference class could not be implemented. The implementation could be changed to add the pointers to a garbage collection list when the reference count goes to zero. Another thread could monitor and process the list, causing the threads doing the allocation to return faster.  
 
-Furthermore, there is no reason that two different implementations could not be defined, allowing the author of the class a choice between the strict and garbage collection styles of memory management.  
-For example, the author of the StringList class may opt for strict references because the class keeps a file open.
+Furthermore, there is no reason that two different implementations could not be defined, allowing the author of the class a choice between the strict and garbage collection styles of memory management. For example, the author of the StringList class may opt for strict references because the class keeps a file open.
 ```cpp
 class StringList : public ref::Referenceable {
 };
@@ -195,8 +194,9 @@ void operator delete(void* ptr) noexcept
 ```
 There are several flavors of garbage collection that could apply to C++ programs:
 * Gaurantee the destructor of the class will be called at some point in the future by a different thread.  This would allow the main execution to return faster than the version that includes the execution of all destructors.  This could be accomplished by providing an alternate implementation of the Reference class that defers calling delete by adding the pointer to a list that is shared with a garbage collecion thread.
-* Call delete immediately (in the same thread that called new), but delay the call to free, allowing the garbage collector to process.
+* Call delete immediately (in the same thread that called new), but delay the call to free by placing the pointer in a list, allowing the garbage collector to call free in a different thread.
 * Allow some instances to intentionally “leak” by shutting down without fully destructing all objects and freeing their memory.  Some class implementations may not need formal destruction.  While it is reasonable to assume those classes would not define destructors, there could still be significant execution time saved by not freeing all pointers prior to ending excution of a C++ program.  
+
 This could cause some C++ programs to run faster by skipping deleting class instances while preventing those intentional leaks from exhausting memory.
 
 ## Conclusion
