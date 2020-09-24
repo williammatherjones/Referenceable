@@ -50,8 +50,8 @@ void someFunction () {
 	StringListView* pMyOtherClass = myClassFactory ();
 	otherFunction (pMyOtherClass);
 	delete pMyOtherClass;
-	// Oops!  otherFunction stores a copy of the pointer in a data structure.
-	// It just became invalid!
+	// Oops!  otherFunction starts a thread that uses the pointer.
+	// It may be deleted before the thread uses it.
 }
 ```
 In this case, the developer has responsibly cleaned up by calling delete, but was unaware that the code in otherFunction starts a thread that uses the pointer.  Even worse, what otherFunction did not do that when this code was written, but gets refactored at some point in the future to do it?  In order to avoid creating this type of defect, developers need to understand the low level implementation of the entire code base.  
