@@ -147,13 +147,36 @@ void someOtherFunction () {
 }
 ```
 The code has several notable changes:   
-The StringList class has been added.  
-The StringListView now has a private member variable.   Since this is a reference class, it ensures that the StringList instance will not be deleted while it is still referencing it.
-The someFunction method now returns the listRef.  When the function returns, the viewRef will delete its StringListView.   When that class destructs, it will release its m_StringListRef reference.   However, the StringList instance will not be deleted because it is still referenced by listRef.  That instance will not be deleted until someOtherFunction returns, causing the last reference to be released.  
-The someFunction method checks viewRef for NULL.  Overloaded operators cause this to check to see if viewRef if referencing a class.   Internally, this checks a pointer for NULL.
-If you look back at the implementation of someFunction, you may notice something strange. 
-	viewRef->printList ();
-If this were a normal C++ class, the syntax should be:
-	viewRef.printList ();
-The reference class does this by overriding the member selection operator ->.  The printList method is not a method of the reference class.  It is directly calling the method of the StringListView as defined in the sample.  
+* The StringList class has been added.  
+* The StringListView now has a private member variable.   Since this is a reference class, it ensures that the StringList instance will not be deleted while it is still referencing it.
+* The someFunction method now returns the listRef.  When the function returns, the viewRef will delete its StringListView.   When that class destructs, it will release its m_StringListRef reference.   However, the StringList instance will not be deleted because it is still referenced by listRef.  That instance will not be deleted until someOtherFunction returns, causing the last reference to be released.  
+* The someFunction method checks viewRef for NULL.  Overloaded operators cause this to check to see if viewRef if referencing a class.   Internally, this checks a pointer for NULL.
+* If you look back at the implementation of someFunction, you may notice something strange. 
+```cpp
+viewRef->printList ();
+```
+* If this were a normal C++ class, the syntax should be:
+```cpp
+viewRef.printList ();
+```
+* The reference class does this by overriding the member selection operator ->.  The printList method is not a method of the reference class.  It is directly calling the method of the StringListView as defined in the sample.  
+
 The reference class overloads operators and the right constructors in order to achieve this simple usage syntax.  The details of the implementation can be seen in src/reference/Referencable.h.
+## C++ reference classes vs Java
+There are some subtle differences between this C++ reference class implementation and Java.   Most importantly, there is no garbage collection algorithm.  When classes are no longer referenced, they are deleted immediately.   This is in many ways superior to the Java implementation because you can count on destructors being called immediately.   Therefore, classes can reference system resources.  For example, a class can keep a file open, reading and writing as needed.   
+However, this does not mean that a garbage collection style reference class could not be implemented.   The implementation could be changed to add the pointers to a garbage collection list when the reference count goes to zero.  Another thread could monitor and process the list, causing the threads doing the allocation to return faster.  
+Furthermore, there is no reason that two different implementations could not be defined, allowing the author of the class a choice between the strict and garbage collection styles of memory management.  
+For example, the author of the StringList class may opt for strict references because the class keeps a file open.
+```cpp
+class StringList : public ref::Referenceable {
+};
+DECLARE_REFERENCE(StringList);
+```
+However, when writing the StringListView, the author decides to delay the destruction using a garbage collection implementation.  
+```cpp
+class StringListView : public ref::Referenceable {
+};
+DECLARE_GC_REFERENCE(StringListView);
+```
+This could cause the destructor of the class to be called at some point in the future, or for the program to intentionally “leak” by shutting down without fully destructing all objects.   This could cause some C++ programs to run faster by skipping deleting class instances while preventing those intentional leaks from exhausting memory.
+DECLARE_STRICT_REFERENCE(StringList);
