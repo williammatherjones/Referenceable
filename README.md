@@ -1,5 +1,5 @@
 # Referenceable
-A C++ sample project demonstrating an innovative approach to handling the memory management of class instances.
+A C++ sample project demonstrating an innovative approach to handling the memory management of class instances, providing a smart pointer which automatically deletes the managed value.
 
 <b>Adjective</b>
 Capable of being referenced.<br>
@@ -204,6 +204,12 @@ There are several flavors of garbage collection that could apply to C++ programs
 * Allow some instances to intentionally “leak” by shutting down without fully destructing all objects and freeing their memory.  Some class implementations may not need formal destruction.  While it is reasonable to assume those classes would not define destructors, there could still be significant execution time saved by not freeing all pointers prior to ending excution of a C++ program.  
 
 This could cause some C++ programs to run faster by skipping deleting class instances while preventing those intentional leaks from exhausting memory.
+
+## std::shared_ptr
+This implementation is similar in function to the standard library shared_ptr introduced in C++11 and it's predeccessor, auto_ptr.  This code was developed independently of the standard library functionality.  The key difference between implementations is which class owns the reference count.  The std::shared_ptr owns the reference count of the pointer being referenced.   This implementation, the class instance owns the refrence count because all referenceable classes inherit ref::Referencable.
+
+## Thread safety
+This implementation does not support concurrent access from multiple threads.   To add support mutex classes would need to be used to protect addRef and release.  Support could be added by modifying the existing implementation or by adding an additional implementation, creating a single thread safe and multiple thread safe implementation.
 
 ## Code Review
 Start by reviewing the code in My Reference Project.cpp.   The code loads a StringList from a src/Names.txt, sorts the values and then merges values from an additional list loaded from memory.   What the program does is not remarkable, it's how it does it.   
